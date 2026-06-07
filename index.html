@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>⛳ Golf Practice Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a1a0a;color:#e8f5e8;min-height:100vh}
+header{background:#1a3a1a;padding:16px 20px;border-bottom:2px solid #2d7a2d;position:sticky;top:0;z-index:10}
+header h1{font-size:20px;color:#7fff7f;font-weight:700}
+header p{font-size:12px;color:#5a8a5a;margin-top:2px}
+.container{max-width:600px;margin:0 auto;padding:20px 16px 40px}
+.section-label{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#5a8a5a;margin-bottom:8px}
+.selection-row{display:flex;gap:10px;margin-bottom:20px}
+.select-wrapper{flex:1}
+select{width:100%;padding:14px 12px;background:#1a2e1a;border:1.5px solid #2d5a2d;border-radius:10px;color:#e8f5e8;font-size:15px;-webkit-appearance:none;appearance:none;outline:none}
+select:focus{border-color:#5aaa5a}
+.session-banner{background:#142814;border:1px solid #2d5a2d;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:none}
+.session-banner.visible{display:block}
+.phase-pill{display:inline-block;background:#2d5a2d;color:#7fff7f;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-bottom:6px}
+.theme-text{font-size:16px;font-weight:600;color:#e8f5e8}
+.drill-card{background:#111f11;border:1.5px solid #2d4a2d;border-radius:12px;padding:16px;margin-bottom:12px}
+.drill-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.drill-name{font-size:15px;font-weight:700;color:#a0e0a0;flex:1;padding-right:8px}
+.drill-time{font-size:12px;color:#5a8a5a;background:#1a3a1a;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.drill-instructions{font-size:13px;color:#7aaa7a;line-height:1.5;margin-bottom:10px;font-style:italic}
+.drill-target{font-size:13px;color:#b0d0b0;margin-bottom:12px;padding:8px 10px;background:#0d1f0d;border-left:3px solid #3a7a3a;border-radius:0 6px 6px 0}
+.drill-target strong{color:#7fff7f}
+.result-row{display:flex;gap:10px;align-items:flex-start}
+textarea.result-input{flex:1;padding:10px 12px;background:#0a150a;border:1.5px solid #2d4a2d;border-radius:8px;color:#e8f5e8;font-size:14px;outline:none;resize:vertical;min-height:48px;font-family:inherit}
+textarea.result-input:focus{border-color:#5aaa5a}
+textarea.result-input::placeholder{color:#3a5a3a}
+.pass-fail-toggle{display:flex;flex-direction:column;gap:4px}
+.pf-btn{padding:9px 10px;border:1.5px solid #2d4a2d;border-radius:8px;background:transparent;color:#5a8a5a;font-size:12px;font-weight:700;cursor:pointer;min-width:52px;text-align:center;-webkit-tap-highlight-color:transparent}
+.pf-btn.pass.active{background:#1a4a1a;border-color:#5aaa5a;color:#7fff7f}
+.pf-btn.fail.active{background:#3a1a1a;border-color:#aa5a5a;color:#ff9a9a}
+.feel-section,.notes-section{background:#111f11;border:1.5px solid #2d4a2d;border-radius:12px;padding:16px;margin-bottom:12px}
+.feel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.feel-label,.notes-label{font-size:15px;font-weight:700;color:#a0e0a0}
+.feel-value{font-size:28px;font-weight:800;color:#7fff7f}
+input[type=range]{width:100%;height:6px;-webkit-appearance:none;appearance:none;background:#2d4a2d;border-radius:3px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;background:#5aaa5a;border-radius:50%;cursor:pointer}
+.feel-labels{display:flex;justify-content:space-between;font-size:11px;color:#3a6a3a;margin-top:6px}
+.notes-label{margin-bottom:10px;display:block}
+textarea.notes-ta{width:100%;padding:10px 12px;background:#0a150a;border:1.5px solid #2d4a2d;border-radius:8px;color:#e8f5e8;font-size:14px;outline:none;resize:vertical;min-height:80px;font-family:inherit;line-height:1.5}
+textarea.notes-ta:focus{border-color:#5aaa5a}
+textarea.notes-ta::placeholder{color:#3a5a3a}
+.complete-btn{width:100%;padding:18px;background:#2d7a2d;border:none;border-radius:12px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;margin-bottom:12px}
+.complete-btn:active{background:#1a5a1a}
+.no-session{text-align:center;padding:30px 20px;color:#3a6a3a;font-size:15px;display:none}
+.no-session.visible{display:block}
+.select-prompt{text-align:center;padding:40px 20px;color:#3a6a3a;font-size:15px}
+.select-prompt-icon{font-size:48px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>⛳ Golf Practice Tracker</h1>
+  <p>Dan Brown · Rheinblick GC · 2026</p>
+</header>
+<div class="container">
+  <div class="selection-row">
+    <div class="select-wrapper">
+      <div class="section-label">Session Type</div>
+      <select id="session-type" onchange="updateSession()">
+        <option value="">Select...</option>
+        <option value="short-game">Short Game</option>
+        <option value="putting">Putting</option>
+        <option value="range">Range</option>
+        <option value="on-course">On-Course</option>
+        <option value="touch-1">Touch Session 1</option>
+        <option value="touch-2">Touch Session 2</option>
+        <option value="championship">Championship Day 1</option>
+      </select>
+    </div>
+    <div class="select-wrapper">
+      <div class="section-label">Week</div>
+      <select id="week-num" onchange="updateSession()"></select>
+    </div>
+  </div>
+  <div class="session-banner" id="session-banner">
+    <span class="phase-pill" id="phase-pill"></span>
+    <div class="theme-text" id="theme-text"></div>
+  </div>
+  <div id="drills-container"></div>
+  <div class="no-session" id="no-session">No session scheduled for this week.</div>
+  <div class="select-prompt" id="select-prompt">
+    <div class="select-prompt-icon">🏌️</div>
+    Select session type and week to load drills.
+  </div>
+  <div id="session-footer" style="display:none">
+    <div class="feel-section">
+      <div class="feel-header">
+        <span class="feel-label">Session Feel</span>
+        <span class="feel-value" id="feel-display">3</span>
+      </div>
+      <input type="range" id="feel-slider" min="1" max="5" value="3"
+             oninput="document.getElementById('feel-display').textContent=this.value">
+      <div class="feel-labels"><span>1 — Rough</span><span>3 — OK</span><span>5 — Excellent</span></div>
+    </div>
+    <div class="notes-section">
+      <span class="notes-label">Practice Notes</span>
+      <textarea id="practice-notes" class="notes-ta" placeholder="What clicked, what didn't, next focus..."></textarea>
+    </div>
+    <button class="complete-btn" onclick="completeSession()">✓ Complete Session &amp; Download</button>
+  </div>
+</div>
+<script>
+const PHASES={1:'Foundation',2:'Foundation',3:'Foundation',4:'Foundation',5:'Build',6:'Build',7:'Build',8:'Build',9:'Build',10:'Sharpen',11:'Sharpen',12:'Sharpen',13:'Championship'};
+
+const SESSIONS={
+'short-game':{label:'Short Game',weeks:{
+1:{theme:'Baseline + Technique',drills:[
+{name:'Proximity Baseline',time:15,instructions:'Drop 10 balls from 5 positions around the green (5, 10, 15, 20, 25y). Chip to hole, count up-and-downs.',target:'30%+ (your current avg). Record exact number.'},
+{name:'Club Selection Map',time:10,instructions:'Same chip (flat 15y, firm ground) with 9i, PW, and 58°. Observe flight and roll. Begin building your lie → club decision map.',target:'Note which club lands closest most consistently.'},
+{name:'Landing Zone Drill',time:15,instructions:'Place 2 tees as a 1ft gate 1/3 of the way to the hole. Chip 10 balls aiming to land through the gate. Use 9i for bump-and-run shots.',target:'6/10 through gate.'},
+{name:'Face Control',time:10,instructions:'Set 2 tees 1 ball-width apart, 18 inches in front. Chip 10 balls through without hitting tees. Forces square face at contact.',target:'7/10 clean.'}]},
+2:{theme:'Chipping Volume',drills:[
+{name:'Landing Zone — Higher Volume',time:20,instructions:'Same gate drill as Wk1 but 20 balls. 9i for bump-and-run, add 58° for uphill/tight lies. Alternate clubs every 5 balls.',target:'7/10 through gate (9i). 5/10 (58°).'},
+{name:'The 3-Club Rule',time:15,instructions:'Before each chip, decide: 9i, PW, or 58°. Based on lie, slope, and distance. Say it out loud. Then execute.',target:'10 chips, 10 decisions. Were they right?'},
+{name:'Up-and-Down Challenge',time:15,instructions:'10 balls from 5 different spots (2 balls each). Chip and one putt. Include at least 2 tight lies.',target:'35% (improvement from Wk1 baseline).'}]},
+3:{theme:'Chipping Under Pressure',drills:[
+{name:'Consequence Game',time:20,instructions:'20 ball up-and-down game: +1 for up-and-down, -1 for 3 shots or more. Keep score over 20 balls from varied positions.',target:'Positive score. Record actual.'},
+{name:'Tight Lie Special',time:15,instructions:'10 chips from tight/hardpan lies. Ball back in stance, hands forward, descending strike.',target:'5/10 landing within 6ft.'},
+{name:'H9 Rheinblick Simulation',time:15,instructions:'Chip from 15y, uphill, to a back pin. Use your real routine. 10 balls. Track up-and-downs.',target:'40% up-and-down. This is Rheinblick money.'}]},
+4:{theme:'Full Assessment',drills:[
+{name:'Week 1 Repeat — Proximity Baseline',time:15,instructions:'Exact repeat of Week 1 up-and-down baseline. Same 5 positions, 10 balls, record %.',target:'40%+ (vs ~30% Week 1). Record gap.'},
+{name:'Bump-and-Run vs Lob — Decision Drill',time:15,instructions:'10 shots alternating between bump-and-run (9i) and lob (58°) from same position. Note proximity.',target:'Proximity comparison logged. Record 9i and 58° separately.'},
+{name:'H5 + H9 Simulation',time:20,instructions:'5 balls from H5 scenario (93y wedge), 5 from H9 chip scenario. Full routine each shot.',target:'Par/bogey rate. Target 50% par conversion.'}]},
+5:{theme:'Advanced Chipping',drills:[
+{name:'Distance Control Matrix',time:20,instructions:'4 distances (8y, 15y, 20y, 25y) × 3 clubs (9i, PW, 58°). 3 balls each = 36 shots. Record best club per distance.',target:'Which club gives best proximity at each distance?'},
+{name:'Awkward Lies Block',time:15,instructions:'Seek out: downhill chip, sidehill lie, rough fringe, tight bare ground. 2 balls each. Focus on setup adaptation.',target:'Record what works from each lie.'},
+{name:'Up-and-Down Pressure Game',time:15,instructions:'Score +1 / -1. 20 balls, varied positions. Full routine every shot.',target:'+3 or better.'}]},
+6:{theme:'Scoring Position Finishes',drills:[
+{name:'Par 5 Approach Chip',time:20,instructions:'Simulate 3rd shot onto par 5 (30y chip from semi-rough). H6/H16/H18 scenario. Chip to 6ft or closer = birdie chance.',target:'30% chips inside 6ft.'},
+{name:'Uphill Chip-to-Putt',time:15,instructions:'Uphill chip, 15y. Goal: stop ball below the hole (uphill putt). 10 balls. Conscious position management.',target:'% stopping below hole: target 60%.'},
+{name:'Up-and-Down Game',time:15,instructions:'10 balls, full +1/-1 scoring. Full routine.',target:'+4 or better.'}]},
+7:{theme:'Real Conditions',drills:[
+{name:'Random Lie Challenge',time:20,instructions:'Drop ball from knee height — wherever it lands is your lie. 15 balls total. No cueing perfect lies.',target:'Record up-and-down rate from random lies.'},
+{name:'Pressure 10-Ball',time:15,instructions:'10 balls, keep score, full routine. Every miss counts.',target:'Personal best attempt. Record.'},
+{name:'Rheinblick Holes Sim',time:15,instructions:'H5, H9, H10 chips from memory. 3 balls each hole. Focus on club selection for that specific shot.',target:'Rate your club choice accuracy.'}]},
+8:{theme:'Consistency Test',drills:[
+{name:'50-ball Chip Marathon',time:30,instructions:'50 chips from 5 positions (10 each). Record up-and-down rate across all 50.',target:'45%+ (vs ~30% Week 1).'},
+{name:'Worst Lie Drill',time:20,instructions:'Practice only from worst lies: hardpan, deep rough fringe, downhill. 15 balls. Accept imperfect results.',target:'Were decisions correct even if outcomes were imperfect?'}]},
+9:{theme:'Phase Assessment',drills:[
+{name:'Phase 1+2 Assessment',time:30,instructions:'Repeat Wk 1 baseline exactly: 10 balls from 5 positions. Record up-and-down rate. Plot improvement.',target:'48%+ (vs 30% Wk1, 40% Wk4).'},
+{name:'Simulation Game',time:20,instructions:'10 ball consequence game (+1/-1). Full routine. Aim for personal best.',target:'+6 or better.'}]},
+10:{theme:'High Pressure',drills:[
+{name:'Championship Chip Sim',time:30,instructions:'Name each shot as if in the championship. "This is H9, I need this up-and-down to save par." Full routine. 20 balls.',target:'50%+ named pressure shots.'},
+{name:'No Rehearsal Drill',time:20,instructions:'10 chips — NO practice swing. Walk in, visualise, execute. Trains you to trust instincts under time pressure.',target:'How different is your strike without rehearsal?'}]},
+11:{theme:'Routine Lock',drills:[
+{name:'Routine Standardisation',time:25,instructions:'Every chip: 1. Assess lie. 2. Choose club (say out loud). 3. Identify landing spot. 4. One rehearsal swing. 5. Execute. 20 balls.',target:'Were all 5 steps followed on every chip?'},
+{name:'Hostile Conditions',time:25,instructions:'Practice under self-imposed pressure: standing on one foot, counting backwards, or with a 10-second shot clock.',target:'Up-and-down rate. Should stay near normal.'}]},
+12:{theme:'Quality, Not Volume',drills:[
+{name:'Final Up-and-Down Benchmark',time:20,instructions:'Repeat exact Wk1 baseline one final time. Record improvement arc.',target:'52%+ (vs 30% Wk1). Final data point.'},
+{name:'Rheinblick Priority Chips',time:25,instructions:'H5, H9, H12 specific chips — 3 balls each, full routine. Documented money holes.',target:'Up-and-down rate on these 3 holes: target 50%.'}]}}},
+
+'putting':{label:'Putting',weeks:{
+1:{theme:'Baseline + Acceleration',drills:[
+{name:'6ft Baseline',time:10,instructions:'4 balls at 6ft (N/S/E/W). Putt all 4. Repeat 3 times = 12 putts. Record make rate. Week 1 benchmark.',target:'Your current avg: 13%. Note actual number.'},
+{name:'Acceleration Drill',time:10,instructions:'From 8ft, finish 12–18 inches past the hole if you miss. Long, accelerating stroke through the ball. 10 putts.',target:'Count how many reach or pass the hole.'},
+{name:'Lag Circle',time:15,instructions:'From 30ft, place 4 tees in a 3ft circle around hole. Putt 10 balls aiming to stop inside circle.',target:'6/10 inside circle. Record exact.'}]},
+2:{theme:'6ft Routine Building',drills:[
+{name:'Round-the-Clock',time:15,instructions:'4 balls at 6ft, 4 compass points. Must hole all 4 before moving. If you miss, restart.',target:'How many attempts before holing all 4? Record.'},
+{name:'Miss Long Drill',time:10,instructions:'From 7ft, every miss must finish 12–18 inches past. 15 putts.',target:'Count how many misses reached or passed the hole.'},
+{name:'Lag Control 25ft',time:10,instructions:'10 putts from 25ft into a 3ft circle. Then 5 putts from 40ft.',target:'7/10 inside circle at 25ft.'}]},
+3:{theme:'6ft Make Rate + Pressure',drills:[
+{name:'Make 3 in a Row',time:15,instructions:'From 6ft: must hole 3 consecutive putts. Miss = restart from 1.',target:'Record attempts to complete.'},
+{name:'6ft Check-in',time:10,instructions:'12 putts from 6ft (same 4-point setup as Wk 1). Record make rate. Compare to Week 1.',target:'25%+ (baseline was ~13%). Record.'},
+{name:'Two-Putt From 30ft',time:10,instructions:'10 balls from 30ft. Sole goal: 2-putt every one. Lag to 3ft, then hole out. H10 Rheinblick drill.',target:'8/10 two-putts. Record 3-putt count.'}]},
+4:{theme:'Full Assessment',drills:[
+{name:'6ft Formal Baseline Retest',time:12,instructions:'12 putts, exact Wk1 setup. Record make rate. 4-week improvement measurement.',target:'30%+ (vs ~13% Week 1).'},
+{name:'Pressure Make 3',time:10,instructions:'Make 3 in a row from 6ft. Time yourself.',target:'Record attempts.'},
+{name:'Lag Retest 30ft',time:13,instructions:'10 balls from 30ft, 5 from 40ft. Record % inside 3ft circle.',target:'7/10 at 30ft (baseline Wk1 was ~6/10).'}]},
+5:{theme:'6ft Automation',drills:[
+{name:'50-ball 6ft Block',time:20,instructions:'50 consecutive 6ft putts. Mix 4 quadrants. Record total makes.',target:'Record makes out of 50. Target: 20+ (40%).'},
+{name:'Speed Match Drill',time:15,instructions:'From 20ft: putt ball 1. Then putt ball 2 to stop exactly at ball 1. 10 reps.',target:'How close on average? Aim for under 18 inches.'}]},
+6:{theme:'Birdie Conversion',drills:[
+{name:'6–9ft Birdie Putt Block',time:20,instructions:'Set up from 6ft, 7ft, 8ft, 9ft. 4 balls each = 16 putts. Birdie putts from par 5s. Full routine each.',target:'35% make rate across all 4 distances.'},
+{name:'H6 Simulation',time:15,instructions:'7ft, left edge break. 10 putts. You 3-putted from 7ft on H6. Accelerate through, finish 12–18" past if miss.',target:'5/10 made. Record.'}]},
+7:{theme:'On-Course Putting Sim',drills:[
+{name:'Course Putt Sim',time:20,instructions:'Walk to 5 different holes on the practice green. From each, putt as if real round: read, routine, one putt. 2-putt is par.',target:'2 under (3 one-putts out of 5).'},
+{name:'3-Putt Elimination',time:15,instructions:'From 35ft: putt 1 to within 3ft, hole out. 10 reps. Every 3-putt = 2 penalty reps. H10 Rheinblick sim.',target:'3-putt count: target 0 out of 10.'}]},
+8:{theme:'Speed + Pressure',drills:[
+{name:'6ft Formal Retest',time:12,instructions:'12-putt formal test, same 4-point setup. 8-week tracking data point.',target:'35%+. Compare to Wk 1 baseline.'},
+{name:'Consequence 6ft',time:13,instructions:'Each miss adds 1 putt to your score. Start at 0. Make 10 consecutive from 6ft = perfect.',target:'Record personal best score.'},
+{name:'Long Lag Test',time:10,instructions:'5 balls from 40ft. Can you 2-putt all 5? Lag to 3ft zone, hole out.',target:'4/5 two-putts.'}]},
+9:{theme:'Phase Assessment',drills:[
+{name:'Full Putting Assessment',time:20,instructions:'50-ball 6ft block. Record makes. Also: 10 putts from 30ft (record 3-putt rate).',target:'6ft: 45%+. Lag: 0 three-putts from 30ft.'},
+{name:'Rheinblick Hole Sim',time:15,instructions:'H6 (7ft birdie putt) and H10 (32ft lag). 5 balls each. Full routine.',target:'H6: 3/5 made. H10: 0 three-putts.'}]},
+10:{theme:'Pressure Putting',drills:[
+{name:'Money Drill',time:20,instructions:'Imagine €10 on each putt from 6ft. Make = keep. Miss = lose. 20 putts. No practice strokes once you address the ball.',target:'45%+. Record.'},
+{name:'Death Ladder',time:15,instructions:'Putt from 3ft, 4ft, 5ft, 6ft, 7ft, 8ft in sequence. Must make each before moving back. If you miss, return to 3ft.',target:'Record attempts to complete.'}]},
+11:{theme:'Routine Lock',drills:[
+{name:'Pre-round Warm-up Protocol',time:15,instructions:'Standardise your pre-round warm-up: 5 × 3ft (confidence), 5 × 6ft (speed check), 3 × 20ft (lag feel), 2 × 40ft (long lag). Timer: 12–15 min.',target:'Can you complete in 15 min feeling ready?'},
+{name:'6ft Formal Check',time:10,instructions:'12-putt formal test. Record make rate.',target:'40%+.'},
+{name:'Long Lag Wk11',time:10,instructions:'10 putts from 35ft. Record 3-putt count.',target:'0 three-putts.'}]},
+12:{theme:'Confidence Session',drills:[
+{name:'Confidence 3ft Block',time:10,instructions:'Make 20 putts from 3ft in a row. Pure confidence building. Do not leave until done.',target:'Completion = done.'},
+{name:'6ft Final Benchmark',time:10,instructions:'12 formal putts. Final make rate data point.',target:'40%+ (vs 13% Wk1).'},
+{name:'Pre-round Warm-up Rehearsal',time:10,instructions:'Run your standardised warm-up protocol (from Wk11) once. Time it.',target:'Confirm timing and feel.'}]}}},
+
+'range':{label:'Range',weeks:{
+1:{theme:'ProSendr Habit + Wedge Intro',drills:[
+{name:'ProSendr Activation',time:5,instructions:'10 slow-motion takeaway rehearsals before hitting any balls. Daily habit — do this before every session and every round.',target:'Non-negotiable daily habit. Tick it off.'},
+{name:'HackMotion Baseline',time:15,instructions:'Record wrist angles at address, P2, P4, P6 with HackMotion. Take video. Week 1 only — diagnostic baseline.',target:'Record flexion/extension values at each position.'},
+{name:'Wedge at 95y',time:20,instructions:'20 balls at a 95y target (GW or SW). Pace where each ball finishes. Awareness — how consistent are you?',target:'Record average proximity. Aim to beat it in Wk 5.'},
+{name:'7-iron Swing Feel',time:20,instructions:'20 balls, 7-iron. Focus on ProSendr takeaway feeling: hands inside, clubhead outside. Build the movement pattern.',target:'Does the takeaway feel different? Note it.'}]},
+2:{theme:'Takeaway + Wedge Distance Control',drills:[
+{name:'ProSendr Activation',time:5,instructions:'10 slow-motion rehearsals. Daily habit — do this first, always.',target:'Tick.'},
+{name:'Clock Wedge',time:25,instructions:'GW or SW: 10 balls at 7 o\'clock swing (shoulder-height backswing), 10 at 9 o\'clock (full). Record carry on each.',target:'Record 7-o\'clock distance and 9-o\'clock distance. Consistency?'},
+{name:'5-iron Focus',time:30,instructions:'30 balls, 5-iron. ProSendr feeling: hands trace inside, clubhead stays outside during takeaway. Take 5 with video. Check P2 position.',target:'P2 check: is the clubhead still visible outside hands?'}]},
+3:{theme:'Driver + Wedge Accuracy',drills:[
+{name:'ProSendr Activation',time:5,instructions:'10 slow-motion rehearsals. Daily habit.',target:'Tick.'},
+{name:'Driver Shape Work',time:25,instructions:'Alignment stick on ground. 15 driver swings focused on starting the ball right of centre. HackMotion: check wrist flexion at impact.',target:'Count how many start at target or right. Goal 6/10.'},
+{name:'Wedge Precision 80–115y',time:30,instructions:'10 balls each at 80y, 95y, 115y. Pace every ball. Record proximity.',target:'Record avg proximity at each distance. Benchmark for Wk 5.'}]},
+4:{theme:'Full Bag Groove',drills:[
+{name:'ProSendr Activation',time:5,instructions:'10 slow-motion rehearsals. Daily habit.',target:'Tick.'},
+{name:'Wedge Matrix Final Assessment',time:20,instructions:'10 balls at 95y. Record proximity. Compare to Wk 1.',target:'Record avg proximity. Target: improve by 5ft vs Wk1.'},
+{name:'Full Bag Sim (9 holes)',time:35,instructions:'Simulate first 9 holes of Rheinblick from memory. Each shot: pick club, visualise, execute. 1 ball per shot.',target:'Focus on decision quality. Score tracking optional.'}]},
+5:{theme:'Wedge Precision 80–115y',drills:[
+{name:'ProSendr Activation',time:5,instructions:'10 slow-motion rehearsals. Daily habit.',target:'Tick.'},
+{name:'Wedge Matrix 80/95/115y',time:35,instructions:'10 balls at each distance. Pace every ball. Record proximity. H5 (93y) is a documented bogey hole.',target:'Avg proximity 20ft or better at all 3 distances. Record 80y, 95y, 115y separately.'},
+{name:'2-iron Practice',time:20,instructions:'10 drives with 2-iron on narrow target. You use 2i on ~12 holes at Rheinblick. No steering.',target:'FW hit rate simulation. Target: 6/10.'}]},
+6:{theme:'Par 5 Strategy',drills:[
+{name:'ProSendr Activation',time:5,instructions:'10 slow-motion rehearsals. Daily habit.',target:'Tick.'},
+{name:'3rd Shot Par 5 Sim',time:25,instructions:'Par 5 scenario: drive (2i), lay up to 95y, full wedge. Hit the sequence 5 times. Track % reaching birdie putt position (inside 20ft).',target:'3/5 sequences leaving inside 20ft.'},
+{name:'Driver Shape Focus',time:30,instructions:'Practice fading/straightening on dogleg rights. Alignment: aim down left side. Feel: hold off the release slightly. 20 balls.',target:'7/10 not over-drawing.'}]},
+8:{theme:'Driver Control + Stack Speed',drills:[
+{name:'ProSendr Activation',time:5,instructions:'10 slow-motion rehearsals. Daily habit.',target:'Tick.'},
+{name:'Stack Speed Protocol',time:20,instructions:'Begin The Stack protocol. Light overspeed work, 3 sets. Focus on swing speed, not accuracy.',target:'Record baseline speed. Follow Stack protocol.'},
+{name:'Driver Dogleg Right Special',time:35,instructions:'20 drivers on dogleg right scenarios. Alignment 10y left of centre. Slightly weaker grip, more body rotation, hold off release.',target:'7/10 with controlled shape (not over-draw).'}]},
+10:{theme:'Tournament Simulation',drills:[
+{name:'ProSendr Activation',time:5,instructions:'10 slow-motion rehearsals. Daily habit.',target:'Tick.'},
+{name:'Tee Shot Simulation',time:30,instructions:'Simulate all 18 Rheinblick tee shots from memory. Name the hole before each shot. Select club per your course plan.',target:'Track how many would be in fairway.'},
+{name:'Approach Simulation',time:25,instructions:'20 approach shots at varied distances (85y, 95y, 115y, 145y, 160y, 175y). One ball each. Full routine. Grade as inside/outside 30ft circle.',target:'14/20 inside 30ft circle.'}]}}},
+
+'on-course':{label:'On-Course',weeks:{
+7:{theme:'9-Hole Strategy Round',drills:[
+{name:'9-Hole Strategy Focus',time:60,instructions:'Play 9 holes. Single strategic focus: use 2i off every relevant tee. Make club decisions based on your yardage matrix.',target:'Record GIR, U&D%, and birdie chances created.'}]},
+9:{theme:'Full 9-Hole Score',drills:[
+{name:'Competitive 9-Hole Round',time:60,instructions:'Play 9 holes as if in competition. Full pre-shot routine. Track all stats: GIR, FW, up-and-down%, 6–9ft make rate. Count every shot.',target:'36 or better. Record GIR, FW, U&D%, 6–9ft makes.'}]},
+11:{theme:'18-Hole Simulation',drills:[
+{name:'Full 18-Hole Comp Sim',time:0,instructions:'Play full 18 as if championship day. No mulligans. Follow Rheinblick strategy map. Arccos on.',target:'78 or better. Record score, GIR, FW, U&D%, 6–9ft makes.'}]},
+12:{theme:'Final Practice Round',drills:[
+{name:'Final 9-Hole Practice Round',time:60,instructions:'Play front or back 9 of Rheinblick. Full competition conditions. After each hole: did I execute the game plan?',target:'Under 36 for 9. Arccos stats tracked.'}]}}},
+
+'touch-1':{label:'Touch Session 1',weeks:{
+13:{theme:'Touch Only',drills:[
+{name:'Feel Chips — No Targets',time:15,instructions:'20 chips, no scoring, no pressure. Reconnect with good contact sensation. Maintenance, not training.',target:"Feel good? That's the only metric."},
+{name:'Confidence Putts',time:15,instructions:'Make 10 putts from 3ft. Make 5 from 6ft. End on a make. Walk away feeling good.',target:'End on a made putt.'}]}}},
+
+'touch-2':{label:'Touch Session 2',weeks:{
+13:{theme:'Pre-Championship Touch',drills:[
+{name:'Pre-round Warm-up Protocol',time:20,instructions:'Run your standardised warm-up (Wk11 protocol). No changes, no experiments.',target:'Routine complete. Feeling confident.'},
+{name:'Rheinblick Mental Walk',time:10,instructions:'Close your eyes, walk all 18 holes mentally. On each: see your tee shot (club, shape, target), see your approach, see the green.',target:'Completed all 18 in your mind.'}]}}},
+
+'championship':{label:'Championship Day 1',weeks:{
+13:{theme:'EXECUTE THE PLAN',drills:[
+{name:'Pre-Round Warm-up',time:45,instructions:'Arrive 75 min before tee. 15 min putting warm-up (standard protocol). 20 min range (feel-based, no fixing). 10 min short game. Walk to tee 5 min early.',target:'Routine complete. Trust your preparation.'},
+{name:'On-Course Execution',time:0,instructions:'Execute: 2i on all appropriate tees. Attack par 5s (H6, H16, H18) for birdie. Protect H5, H9, H10 for par. 6–9ft putts: long stroke, accelerate through. Chips: commit to club choice.',target:'Under 78. Win the club championship. Record R1 score.'}]}}}
+};
+
+let currentSession=null;
+let drillPF={};
+
+function populateWeeks(){
+  const sel=document.getElementById('week-num');
+  sel.innerHTML='<option value="">W?</option>';
+  for(let i=1;i<=13;i++){
+    const o=document.createElement('option');
+    o.value=i;o.textContent='W'+i;sel.appendChild(o);
+  }
+  const start=new Date('2026-06-01');
+  const today=new Date();today.setHours(0,0,0,0);
+  const days=Math.floor((today-start)/86400000);
+  if(days>=0&&days<91){sel.value=Math.min(13,Math.floor(days/7)+1);}
+}
+
+function updateSession(){
+  const typeKey=document.getElementById('session-type').value;
+  const weekNum=parseInt(document.getElementById('week-num').value);
+  const prompt=document.getElementById('select-prompt');
+  const banner=document.getElementById('session-banner');
+  const dc=document.getElementById('drills-container');
+  const ns=document.getElementById('no-session');
+  const footer=document.getElementById('session-footer');
+  drillPF={};
+  if(!typeKey||!weekNum){
+    prompt.style.display='block';banner.classList.remove('visible');
+    dc.innerHTML='';ns.classList.remove('visible');footer.style.display='none';return;
+  }
+  prompt.style.display='none';
+  const st=SESSIONS[typeKey];
+  const wd=st?st.weeks[weekNum]:null;
+  if(!wd){
+    banner.classList.remove('visible');dc.innerHTML='';
+    ns.classList.add('visible');footer.style.display='none';return;
+  }
+  ns.classList.remove('visible');
+  banner.classList.add('visible');
+  document.getElementById('phase-pill').textContent=PHASES[weekNum]+' · W'+weekNum;
+  document.getElementById('theme-text').textContent=wd.theme;
+  dc.innerHTML='';
+  wd.drills.forEach(function(drill,idx){
+    const ts=drill.time>0?drill.time+' min':'Full round';
+    const card=document.createElement('div');
+    card.className='drill-card';
+    card.innerHTML=
+      '<div class="drill-header">'+
+        '<div class="drill-name">Drill '+(idx+1)+': '+drill.name+'</div>'+
+        '<span class="drill-time">'+ts+'</span>'+
+      '</div>'+
+      '<div class="drill-instructions">'+drill.instructions+'</div>'+
+      '<div class="drill-target"><strong>Target:</strong> '+drill.target+'</div>'+
+      '<div class="result-row">'+
+        '<textarea class="result-input" id="result-'+idx+'" placeholder="Result..."></textarea>'+
+        '<div class="pass-fail-toggle">'+
+          '<button class="pf-btn pass" id="pass-'+idx+'" onclick="togglePF('+idx+',\'pass\')">✓ Pass</button>'+
+          '<button class="pf-btn fail" id="fail-'+idx+'" onclick="togglePF('+idx+',\'fail\')">✗ Fail</button>'+
+        '</div>'+
+      '</div>';
+    dc.appendChild(card);
+  });
+  currentSession={typeKey,weekNum,st,wd};
+  footer.style.display='block';
+  document.getElementById('feel-slider').value=3;
+  document.getElementById('feel-display').textContent='3';
+  document.getElementById('practice-notes').value='';
+}
+
+function togglePF(idx,val){
+  const p=document.getElementById('pass-'+idx);
+  const f=document.getElementById('fail-'+idx);
+  if(drillPF[idx]===val){drillPF[idx]=null;p.classList.remove('active');f.classList.remove('active');}
+  else{drillPF[idx]=val;p.classList.toggle('active',val==='pass');f.classList.toggle('active',val==='fail');}
+}
+
+function completeSession(){
+  if(!currentSession)return;
+  const{typeKey,weekNum,st,wd}=currentSession;
+  const today=new Date();
+  const dateStr=today.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const fd=today.toISOString().slice(0,10).replace(/-/g,'');
+  const feel=document.getElementById('feel-slider').value;
+  const notes=document.getElementById('practice-notes').value.trim();
+  const phase=PHASES[weekNum];
+  let md='# Practice Log — '+st.label+' — '+dateStr+'\n';
+  md+='Week: W'+weekNum+' | Phase: '+phase+' | Theme: '+wd.theme+'\n';
+  md+='Session done: YES\n';
+  md+='Session feel (1–5): '+feel+'\n\n';
+  wd.drills.forEach(function(drill,idx){
+    const ts=drill.time>0?drill.time+' min':'Full round';
+    const res=(document.getElementById('result-'+idx).value.trim())||'';
+    const pf=drillPF[idx];
+    const pfStr=pf?' ['+pf.toUpperCase()+']':'';
+    md+='## Drill '+(idx+1)+': '+drill.name+' ('+ts+')\n';
+    md+='Target: '+drill.target+'\n';
+    md+='Result: '+res+pfStr+'\n\n';
+  });
+  if(notes){md+='## Notes\n'+notes+'\n';}
+  const typeName=st.label.replace(/\s+/g,'-');
+  const filename=fd+'_'+typeName+'_W'+weekNum+'.md';
+  const blob=new Blob([md],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  const btn=document.querySelector('.complete-btn');
+  btn.textContent='✓ Downloaded!';btn.style.background='#1a5a1a';
+  setTimeout(function(){btn.textContent='✓ Complete Session & Download';btn.style.background='';},2500);
+}
+
+populateWeeks();
+updateSession();
+</script>
+</body>
+</html>
